@@ -199,9 +199,10 @@ class ModelVersionController():
     @storage_driver
     def save_model(self, model_object, service_name: str, model_file_name: str, garbage_collect: bool = True): 
         registry_uri = self._model_storage_path(service_name=service_name, file_name=model_file_name)
+        local_path = "".join(registry_uri.split("/"))
         
         print("here")
-        torch.save(model_object.state_dict(), registry_uri)
+        torch.save(model_object.state_dict(), local_path)
         print("here2")
         aiplatform.init(
             project=self.project_id,
@@ -215,7 +216,7 @@ class ModelVersionController():
             print("here4.1")
             model_uploaded = aiplatform.Model.upload(
                 display_name=registry_uri,
-                artifact_uri=registry_uri,
+                artifact_uri=local_path,
                 # container_predict_route="/predict",
                 # container_health_route="/health",
                 serving_container_image_uri=os.environ["MODEL_PREDICT_CONTAINER_URI"],
@@ -228,7 +229,7 @@ class ModelVersionController():
             print("here4.2")
             model_uploaded = aiplatform.Model.upload(
                 display_name=registry_uri,
-                artifact_uri=registry_uri,
+                artifact_uri=local_path,
                 # container_predict_route="/predict",
                 # container_health_route="/health",
                 serving_container_image_uri=os.environ["MODEL_PREDICT_CONTAINER_URI"],
@@ -240,7 +241,7 @@ class ModelVersionController():
         model_uploaded.wait()
 
         if garbage_collect:
-            shutil.rmtree(registry_uri)
+            shutil.rmtree(local_path)
 
         if model_file_name not in self.services[service_name].models:
             return self.create_service_model(service_name=service_name, model_file_name=model_file_name, model=model_uploaded)
