@@ -200,8 +200,9 @@ class ModelVersionController():
     def save_model(self, model_object, service_name: str, model_file_name: str, garbage_collect: bool = True): 
         registry_uri = self._model_storage_path(service_name=service_name, file_name=model_file_name)
         
+        print("here")
         torch.save(model_object.state_dict(), registry_uri)
-
+        print("here2")
         aiplatform.init(
             project=self.project_id,
             location=self.region,
@@ -209,8 +210,9 @@ class ModelVersionController():
         )
 
         models = aiplatform.Model.list(filter=(f"display_name={registry_uri}"))
-
+        print("here3")
         if len(models) == 0:
+            print("here4.1")
             model_uploaded = aiplatform.Model.upload(
                 display_name=registry_uri,
                 artifact_uri=registry_uri,
@@ -223,7 +225,7 @@ class ModelVersionController():
 
         else:
             parent_model = models[0].resource_name
-            
+            print("here4.2")
             model_uploaded = aiplatform.Model.upload(
                 display_name=registry_uri,
                 artifact_uri=registry_uri,
@@ -243,6 +245,7 @@ class ModelVersionController():
         if model_file_name not in self.services[service_name].models:
             return self.create_service_model(service_name=service_name, model_file_name=model_file_name, model=model_uploaded)
 
+        print("end")
         self.services[service_name].models[model_file_name].latest_version = model_uploaded.version_id
         return True
 
