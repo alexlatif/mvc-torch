@@ -201,9 +201,9 @@ class ModelVersionController():
         registry_uri = self._model_storage_path(service_name=service_name, file_name=model_file_name)
         local_path = "".join(registry_uri.split("/"))
         
-        print("here")
-        torch.save(model_object.state_dict(), local_path)
-        print("here2")
+        os.makedirs(registry_uri, exist_ok=True)
+
+        torch.save(model_object.state_dict(), os.path.join(registry_uri, 'model.pt'))
         aiplatform.init(
             project=self.project_id,
             location=self.region,
@@ -211,12 +211,10 @@ class ModelVersionController():
         )
 
         models = aiplatform.Model.list(filter=(f"display_name={registry_uri}"))
-        print("here3")
         if len(models) == 0:
-            print("here4.1")
             model_uploaded = aiplatform.Model.upload(
                 display_name=registry_uri,
-                artifact_uri=local_path,
+                artifact_uri=registry_uri,
                 # container_predict_route="/predict",
                 # container_health_route="/health",
                 serving_container_image_uri=os.environ["MODEL_PREDICT_CONTAINER_URI"],
@@ -226,10 +224,9 @@ class ModelVersionController():
 
         else:
             parent_model = models[0].resource_name
-            print("here4.2")
             model_uploaded = aiplatform.Model.upload(
                 display_name=registry_uri,
-                artifact_uri=local_path,
+                artifact_uri=registry_uri,
                 # container_predict_route="/predict",
                 # container_health_route="/health",
                 serving_container_image_uri=os.environ["MODEL_PREDICT_CONTAINER_URI"],
